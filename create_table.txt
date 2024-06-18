@@ -1,0 +1,37 @@
+-- `test-user-file`.user_files definition
+
+CREATE TABLE `user_files` (
+  `user_file_id` bigint NOT NULL AUTO_INCREMENT,
+  `user_id` int DEFAULT NULL,
+  `file_path` varchar(500) DEFAULT NULL,
+  `status` varchar(20) DEFAULT NULL,
+  PRIMARY KEY (`user_file_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=101 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+-- `test-user-file`.user_files_download definition
+
+CREATE TABLE `user_files_download` (
+  `user_files_download` bigint NOT NULL AUTO_INCREMENT,
+  `user_id` int DEFAULT NULL,
+  `file_path` varchar(500) DEFAULT NULL,
+  PRIMARY KEY (`user_files_download`)
+) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+CREATE DATABASE `test-user-file` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+
+SELECT user_id, file_path, status
+FROM (
+    SELECT uf.user_id, uf.file_path, uf.status,
+           ROW_NUMBER() OVER (PARTITION BY uf.user_id ORDER BY uf.file_path) as rn
+    FROM user_files uf
+    WHERE uf.status = 'ready'
+      AND NOT EXISTS (
+--       check if user id have file pending or process
+          SELECT 1 FROM user_files sub
+          WHERE sub.user_id = uf.user_id
+            AND (sub.status = 'pending' OR sub.status = 'process')
+      )
+) ranked_files
+WHERE rn <= 6
