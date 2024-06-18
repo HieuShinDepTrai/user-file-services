@@ -1,0 +1,32 @@
+select * from user_files uf 
+
+select * from user_files_download ufd order by ufd.user_id
+
+
+-- check duplicate file
+SELECT ufd.user_id, ufd.file_path, COUNT(*) AS file_path_count
+FROM user_files_download ufd
+GROUP BY ufd.user_id, ufd.file_path;
+
+
+delete from user_files_download 
+
+
+update user_files uf set uf.status = 'ready'  where user_file_id = 102
+
+-- rank over partition
+SELECT user_id, file_path, status
+FROM (
+    SELECT uf.user_id, uf.file_path, uf.status,
+           ROW_NUMBER() OVER (PARTITION BY uf.user_id ORDER BY uf.file_path) as ranks
+    FROM user_files uf
+    WHERE uf.status = 'ready'
+      AND NOT EXISTS (
+--       check if user id have file pending or process
+          SELECT 1 FROM user_files sub
+          WHERE sub.user_id = uf.user_id
+            AND (sub.status = 'pending' OR sub.status = 'process')
+      )
+) ranked_files
+WHERE ranks <= 6
+
